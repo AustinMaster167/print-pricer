@@ -104,6 +104,18 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
 .chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}
 .chip{font-family:var(--mono);font-size:11.5px;border:1.5px solid var(--ink);border-radius:99px;padding:2px 9px;background:var(--paper2)}
 .drop input{display:none}
+@media (max-width:620px){
+  .drop{padding:16px;gap:14px;align-items:flex-start}
+  .drop .head{width:54px}
+  .drop h3{font-size:19px}
+  .drop p{font-size:13px}
+  .drop .chip.brands{display:none}
+  #reqSum,#oPerUnit{display:none}
+  #reqCard>h2 .chev,#moneyCard>h2 .chev{margin-left:auto}
+  .brand h1{font-size:26px}
+}
+.samplebtn{cursor:pointer;background:var(--sun);color:#1D1A15;font-weight:700;font-family:var(--body);font-size:12.5px}
+.samplebtn:hover{background:var(--accent);color:#fff}
 
 .import{border:2px solid var(--line);border-radius:var(--r);background:var(--mint-2);padding:14px 16px;box-shadow:4px 4px 0 var(--shadow)}
 .import.err{background:var(--bad-2)}
@@ -327,7 +339,7 @@ dialog#picker::backdrop{background:rgba(20,18,15,.55);backdrop-filter:blur(3px)}
           <div>
             <h3>Drop your sliced files here</h3>
             <p>Each G-code file is one plate — select or drop several at once to price a multi-plate project. A sliced .3mf / .gcode.3mf brings in all its plates. Or click to browse.</p>
-            <div class="chips"><span class="chip">.gcode</span><span class="chip">.gcode.3mf</span><span class="chip">.3mf</span><span class="chip">Anycubic · Bambu · Orca · Prusa · Cura</span></div>
+            <div class="chips"><span class="chip">.gcode</span><span class="chip">.gcode.3mf</span><span class="chip">.3mf</span><span class="chip brands">Anycubic · Bambu · Orca · Prusa · Cura</span><button type="button" class="chip samplebtn" id="sampleBtn">✨ Try a sample project</button></div>
           </div>
           <input type="file" id="file" accept=".gcode,.gco,.g,.3mf,.bgcode" multiple>
         </label>
@@ -710,6 +722,7 @@ document.addEventListener('click',e=>{
   if(t.dataset.delq){SAVED=SAVED.filter(x=>x.id!==t.dataset.delq);renderSaved();save()}
   if(t.dataset.rmplate!=null&&IMPORT){e.stopPropagation();IMPORT.plates.splice(+t.dataset.rmplate,1);if(!IMPORT.plates.length){IMPORT=null;renderImport();compute();return}IMPORT.plateSel=IMPORT.plates.filter(p=>p.slots.length).length>1?'all':String(Math.max(0,IMPORT.plates.findIndex(p=>p.slots.length)));applyImport();return}
   if(t.id==='addPlate'){$('#fileAdd').click();return}
+  if(t.id==='sampleBtn'){e.preventDefault();loadSample();return}
   if(t.dataset.plate!=null&&IMPORT&&!t.disabled){IMPORT.plateSel=t.dataset.plate;applyImport()}
   if(t.id==='useObjects'){S.model.perPlate=+t.dataset.n;bindValues();compute();renderImport();toast(`Models per plate set to ${t.dataset.n}`)}
   if(t.id==='dismissImport'){IMPORT=null;renderImport();compute()}
@@ -978,6 +991,23 @@ $$('.card[id]').forEach(c=>{const h=c.querySelector(':scope>h2');if(!h)return;
 function toggleSec(c){const on=c.classList.toggle('collapsed');COLL[c.id]=on;store.set('ss.collapsed',COLL);c.querySelector(':scope>h2').setAttribute('aria-expanded',String(!on))}
 document.addEventListener('click',e=>{const h=e.target.closest('.card>h2.tap');if(!h||e.target.closest('input,button,select,label,a'))return;toggleSec(h.parentElement)});
 document.addEventListener('keydown',e=>{const h=e.target.closest?.('.card>h2.tap');if(h&&e.target===h&&(e.key==='Enter'||e.key===' ')){e.preventDefault();toggleSec(h.parentElement)}});
+
+/* ======================= sample project ======================= */
+function loadSample(){
+  const sl=(index,grams,color,type,name)=>({index,grams,meters:+(grams/G_PER_M(1.75,type==='PETG'?1.27:1.24)).toFixed(2),color,type,name,cost:0});
+  IMPORT={file:'Dragon Desk Set (sample)',plateSel:'all',error:null,loading:false,
+    notes:['This is a built-in sample project — drop your own sliced files to replace it.'],
+    plates:[
+      {index:1,file:'Dragon_Desk_Set_plate_1.gcode',time:4*3600+12*60,objects:2,slots:[sl(1,62.4,'#F2EFE8','PLA','Anycubic PLA'),sl(2,18.3,'#1E1E1E','PLA','Anycubic PLA'),sl(3,9.7,'#D4A537','PLA','Silk Gold PLA')]},
+      {index:1,file:'Dragon_Desk_Set_plate_2.gcode',time:2*3600+38*60,objects:1,slots:[sl(1,31.2,'#F2EFE8','PLA','Anycubic PLA'),sl(4,22.5,'#1AA39A','PETG','Translucent Teal PETG')]},
+      {index:1,file:'Dragon_Desk_Set_plate_3.gcode',time:65*60,objects:4,slots:[sl(2,14.8,'#1E1E1E','PLA','Anycubic PLA'),sl(3,6.1,'#D4A537','PLA','Silk Gold PLA')]},
+    ]};
+  S.model.name='Dragon Desk Set';
+  applyImport(true);
+  S.parts.forEach(p=>{if(p.color==='#D4A537')p.perKg=28;if(p.material==='PETG')p.perKg=19});
+  renderParts();compute();toast('Sample project loaded ✨');
+}
+if(new URLSearchParams(location.search).has('sample'))setTimeout(loadSample,0);
 
 /* ======================= back to top ======================= */
 const toTop=$('#toTop');
